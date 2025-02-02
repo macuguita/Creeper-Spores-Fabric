@@ -1,25 +1,23 @@
 {
 	"schemaVersion": 1,
-	"id": "creeper-spores",
+	"id": "creeperspores",
 	"version": "${version}",
 	"name": "Creeper Spores",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Creeper Spores !",
 	"authors": [
-		"Me!"
+		"Pyrofab",
+		"doctor4t",
+		"macuguita"
 	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
-	},
-	"license": "CC0-1.0",
-	"icon": "assets/creeper-spores/icon.png",
+	"license": "LGPL-3",
+	"icon": "assets/creeperspores/textures/logo.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
 			"org.ladysnake.creeperspores.CreeperSpores"
 		],
-		"fabric-datagen": [
-			"org.ladysnake.creeperspores.CreeperSporesDataGenerator"
+		"client": [
+			"org.ladysnake.creeperspores.client.CreeperSporesClient"
 		]
 	},
 	"mixins": [
