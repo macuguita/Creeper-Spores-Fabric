@@ -18,7 +18,8 @@
 package org.ladysnake.creeperspores.common;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.client.render.entity.feature.EnergySwirlOwner;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.render.entity.feature.SkinOverlayOwner;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
@@ -60,7 +61,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.random.RandomGenerator;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.thread.ThreadExecutor;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LightType;
@@ -72,13 +73,12 @@ import net.minecraft.world.WorldView;
 import org.ladysnake.creeperspores.CreeperEntry;
 import org.ladysnake.creeperspores.CreeperSpores;
 import org.ladysnake.creeperspores.mixin.EntityAccessor;
-import org.quiltmc.qsl.networking.api.PlayerLookup;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.UUID;
 
-public class CreeperlingEntity extends PathAwareEntity implements EnergySwirlOwner {
+public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwner {
     private static final TrackedData<Boolean> CHARGED = DataTracker.registerData(CreeperlingEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final int MATURATION_TIME = 20 * 60 * 8;
 
@@ -98,14 +98,14 @@ public class CreeperlingEntity extends PathAwareEntity implements EnergySwirlOwn
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(2, new FleeEntityGoal<>(this, OcelotEntity.class, 6.0F, 1.0D, 1.2D));
         this.goalSelector.add(2, new FleeEntityGoal<>(this, CatEntity.class, 6.0F, 1.0D, 1.2D));
-        this.goalSelector.add(3, new TemptGoal(this, 0.3D, Ingredient.ofTag(CreeperSpores.FERTILIZERS), false));
+        this.goalSelector.add(3, new TemptGoal(this, 0.3D, Ingredient.fromTag(CreeperSpores.FERTILIZERS), false));
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 1.0));
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
         this.setTrusting(false);
     }
 
     @Override
-    public boolean isEnergySwirlActive() {
+    public boolean shouldRenderOverlay() {
         return this.isCharged();
     }
 
@@ -192,10 +192,12 @@ public class CreeperlingEntity extends PathAwareEntity implements EnergySwirlOwn
             boneMeal.decrement(1);
             PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
             buf.writeInt(this.getId());
-            CustomPayloadS2CPacket packet = new CustomPayloadS2CPacket(CreeperSpores.CREEPERLING_FERTILIZATION_PACKET, buf);
+            CustomPayloadS2CPacket packet = new CustomPayloadS2CPacket(CreeperSpores.id("creeperspores_fertilization"), buf);
 
-            for (ServerPlayerEntity p : PlayerLookup.tracking(this)) {
-                p.networkHandler.sendPacket(packet);
+            if (this.getWorld() instanceof ServerWorld serverWorld) {
+                for (ServerPlayerEntity player : serverWorld.getPlayers()) {
+                    ServerPlayNetworking.send(player, CreeperSpores.id("creeperspores_fertilization"), buf);
+                }
             }
         }
     }
@@ -206,7 +208,7 @@ public class CreeperlingEntity extends PathAwareEntity implements EnergySwirlOwn
             Entity e = player.getWorld().getEntityById(entityId);
             if (e instanceof CreeperlingEntity) {
                 for(int i = 0; i < 15; ++i) {
-                    RandomGenerator random = e.getWorld().random;
+                    Random random = e.getWorld().random;
                     double speedX = random.nextGaussian() * 0.02D;
                     double speedY = random.nextGaussian() * 0.02D;
                     double speedZ = random.nextGaussian() * 0.02D;
@@ -251,7 +253,7 @@ public class CreeperlingEntity extends PathAwareEntity implements EnergySwirlOwn
         // method_28516 == getBrightness
         float skyFavor = computeBrightnessByLightLevel(worldView.getDimension().ambientLight())[skyLightLevel] * 3.0F;
         // But they can do with artificial light if there is not anything better
-        float brightnessAtPos = worldView.getPathfindingCostFromLight(pos);
+        float brightnessAtPos = worldView.getPhototaxisFavor(pos);
         float favor = Math.max(brightnessAtPos, skyFavor);
         // They like good soils too
         if (worldView.getBlockState(pos.down(1)).isIn(BlockTags.BAMBOO_PLANTABLE_ON)) {

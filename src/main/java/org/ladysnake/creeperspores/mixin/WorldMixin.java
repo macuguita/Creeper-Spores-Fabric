@@ -38,7 +38,7 @@ public abstract class WorldMixin {
     private Explosion.DestructionType griefLessExplosion(Explosion.DestructionType explosionType, @Nullable Entity entity) {
         if (entity instanceof CreeperEntity creeper) {
             CreeperGrief grief = this.getGameRules().get(CreeperSpores.CREEPER_GRIEF).get();
-            if (!grief.shouldGrief(creeper.isEnergySwirlActive())) {
+            if (!grief.shouldGrief(creeper.shouldRenderOverlay())) {
                 return Explosion.DestructionType.KEEP;
             }
         }

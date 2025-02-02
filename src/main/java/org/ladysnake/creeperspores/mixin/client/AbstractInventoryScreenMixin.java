@@ -17,7 +17,7 @@
  */
 package org.ladysnake.creeperspores.mixin.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -40,17 +40,17 @@ public abstract class AbstractInventoryScreenMixin {
     private int renderedEffectsIndex;
 
     @Inject(method = "drawStatusEffectDescriptions", at = @At("HEAD"))
-    private void creeperspores$retrieveRenderedEffects(GuiGraphics graphics, int x, int height, Iterable<StatusEffectInstance> effects, CallbackInfo ci) {
+    private void creeperspores$retrieveRenderedEffects(DrawContext graphics, int x, int height, Iterable<StatusEffectInstance> effects, CallbackInfo ci) {
         renderedEffects = (List<StatusEffectInstance>) effects;
         renderedEffectsIndex = 0;
     }
 
     @Inject(method = "drawStatusEffectDescriptions", at = @At("RETURN"))
-    private void creeperspores$clearRenderedEffects(GuiGraphics graphics, int x, int height, Iterable<StatusEffectInstance> effects, CallbackInfo ci) {
+    private void creeperspores$clearRenderedEffects(DrawContext graphics, int x, int height, Iterable<StatusEffectInstance> effects, CallbackInfo ci) {
         renderedEffects = null;
     }
 
-    @ModifyVariable(method = "getStatusEffectName", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/text/Text;copy()Lnet/minecraft/text/MutableText;"), index = 2)
+    @ModifyVariable(method = "getStatusEffectDescription", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/text/Text;copy()Lnet/minecraft/text/MutableText;"), index = 2)
     private MutableText creeperspores$updateRenderedEffectName(MutableText drawnString) {
         if (renderedEffects != null) {
             StatusEffect renderedEffect = renderedEffects.get(renderedEffectsIndex++).getEffectType();

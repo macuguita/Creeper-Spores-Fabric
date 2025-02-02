@@ -18,20 +18,23 @@
 package org.ladysnake.creeperspores;
 
 import com.google.common.base.Suppliers;
+import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.registry.RegistryEntryAddedCallback;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.rule.DoubleRule;
 import net.fabricmc.fabric.api.gamerule.v1.rule.EnumRule;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.DefaultAttributeRegistry;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageType;
-import net.minecraft.entity.effect.StatusEffectType;
+import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
@@ -47,10 +50,6 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
-import org.ladysnake.creeperspores.mixin.EntityTypeAccessor;
-import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.qsl.base.api.entrypoint.ModInitializer;
-import org.quiltmc.qsl.entity.api.QuiltEntityTypeBuilder;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -100,7 +99,7 @@ public class CreeperSpores implements ModInitializer {
     }
 
     @Override
-    public void onInitialize(ModContainer mod) {
+    public void onInitialize() {
         visitRegistry(Registries.ENTITY_TYPE, (id, type) -> {
             if (CREEPER_LIKES.contains(id)) {
                 // can't actually check that the entity type is living, so just hope nothing goes wrong
@@ -144,25 +143,28 @@ public class CreeperSpores implements ModInitializer {
 
     @Contract(pure = true)
     private static CreeperSporeEffect createCreeperSporesEffect(EntityType<?> creeperType) {
-        return new CreeperSporeEffect(StatusEffectType.NEUTRAL, 0x22AA00, creeperType);
+        return new CreeperSporeEffect(StatusEffectCategory.NEUTRAL, 0x22AA00, creeperType);
     }
 
     @Contract(pure = true)
     private static EntityType<CreeperlingEntity> createCreeperlingType(EntityType<? extends LivingEntity> creeperType) {
         Supplier<CreeperEntry> kind = Suppliers.memoize(() -> CreeperEntry.get(creeperType));
-        DefaultAttributeContainer defaultAttributes = DefaultAttributeRegistry.get(creeperType);
-        EntityType<CreeperlingEntity> creeperlingType = QuiltEntityTypeBuilder.createMob()
-                .spawnGroup(creeperType.getSpawnGroup())
-                .entityFactory((EntityType<CreeperlingEntity> type, World world) -> new CreeperlingEntity(Objects.requireNonNull(kind.get()), world))
-                .setDimensions(EntityDimensions.changing(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f))
-                .maxBlockTrackingRange(64)
-                .trackingTickInterval(1)
-                .alwaysUpdateVelocity(true)
-                .defaultAttributes(MobEntity.createAttributes()
-                        .add(EntityAttributes.GENERIC_MAX_HEALTH, defaultAttributes.getBaseValue(EntityAttributes.GENERIC_MAX_HEALTH) * 0.5)
-                        .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, defaultAttributes.getBaseValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) * 0.8))
+        DefaultAttributeContainer defaultAttributes = LivingEntity.createLivingAttributes()
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3)
                 .build();
-        ((EntityTypeAccessor) creeperlingType).setTranslationKey("entity.creeperspores.creeperling");
+
+        EntityType<CreeperlingEntity> creeperlingType = FabricEntityTypeBuilder.create(SpawnGroup.MISC, (EntityType<CreeperlingEntity> type, World world) -> new CreeperlingEntity(Objects.requireNonNull(kind.get()), world))
+                .dimensions(EntityDimensions.changing(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f))
+                .trackRangeChunks(4) // 64 blocks tracking range
+                .trackedUpdateRate(1)
+                .build();
+
+        // Set default attributes
+        FabricDefaultAttributeRegistry.register(creeperlingType, MobEntity.createMobAttributes()
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, defaultAttributes.getValue(EntityAttributes.GENERIC_MAX_HEALTH) * 0.5)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, defaultAttributes.getValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) * 0.8));
+
         return creeperlingType;
     }
 }

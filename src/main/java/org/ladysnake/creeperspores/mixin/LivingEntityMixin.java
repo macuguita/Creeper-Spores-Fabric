@@ -56,7 +56,7 @@ public abstract class LivingEntityMixin extends Entity {
                 if (this.getHealth() <= 0.0f) {
                     chance *= 4;
                 }
-                if (cause.isTypeIn(CreeperSpores.SPAWNS_MORE_CREEPERLINGS)) {
+                if (cause.isIn(CreeperSpores.SPAWNS_MORE_CREEPERLINGS)) {
                     chance *= 2;
                 }
                 if (random.nextFloat() < chance) {
@@ -69,7 +69,7 @@ public abstract class LivingEntityMixin extends Entity {
     @ModifyVariable(method = "damage", at = @At("HEAD"), ordinal = 0, argsOnly = true)
     private float dealDoubleFireDamage(float damageAmount, DamageSource damage) {
         //noinspection ConstantConditions
-        if ((Entity) this instanceof CreeperEntity && damage.isTypeIn(CreeperSpores.EXTRA_CREEPER_DAMAGE)) {
+        if ((Entity) this instanceof CreeperEntity && damage.isIn(CreeperSpores.EXTRA_CREEPER_DAMAGE)) {
             return damageAmount * 2;
         }
         return damageAmount;
