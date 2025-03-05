@@ -186,17 +186,17 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
             if (boneMeal.isIn(CreeperSpores.SUPER_FERTILIZERS)) {
                 this.ticksInSunlight = MATURATION_TIME;
             } else {
-                this.ticksInSunlight += (20 * (60 + 120 * this.random.nextFloat()));
+                this.ticksInSunlight += (int) (20 * (60 + 120 * this.random.nextFloat()));
             }
 
             boneMeal.decrement(1);
             PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
             buf.writeInt(this.getId());
-            CustomPayloadS2CPacket packet = new CustomPayloadS2CPacket(CreeperSpores.id("creeperspores_fertilization"), buf);
+            CustomPayloadS2CPacket packet = new CustomPayloadS2CPacket(CreeperSpores.CREEPERLING_FERTILIZATION_PACKET, buf);
 
             if (this.getWorld() instanceof ServerWorld serverWorld) {
                 for (ServerPlayerEntity player : serverWorld.getPlayers()) {
-                    ServerPlayNetworking.send(player, CreeperSpores.id("creeperspores_fertilization"), buf);
+                    ServerPlayNetworking.send(player, CreeperSpores.CREEPERLING_FERTILIZATION_PACKET, buf);
                 }
             }
         }
