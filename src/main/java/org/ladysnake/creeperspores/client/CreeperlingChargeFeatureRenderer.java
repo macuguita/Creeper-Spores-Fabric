@@ -27,7 +27,7 @@ import net.minecraft.util.Identifier;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
 
 public class CreeperlingChargeFeatureRenderer extends EnergySwirlOverlayFeatureRenderer<CreeperlingEntity, CreeperEntityModel<CreeperlingEntity>> {
-    private static final Identifier SKIN = new Identifier("textures/entity/creeper/creeper_armor.png");
+    private static final Identifier SKIN = Identifier.of("textures/entity/creeper/creeper_armor.png");
     private final CreeperEntityModel<CreeperlingEntity> creeperModel;
 
     public CreeperlingChargeFeatureRenderer(FeatureRendererContext<CreeperlingEntity, CreeperEntityModel<CreeperlingEntity>> ctx, EntityModelLoader loader) {

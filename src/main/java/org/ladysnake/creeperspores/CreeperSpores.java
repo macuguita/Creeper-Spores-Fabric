@@ -24,10 +24,9 @@ import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.fabricmc.fabric.api.gamerule.v1.rule.DoubleRule;
 import net.fabricmc.fabric.api.gamerule.v1.rule.EnumRule;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.Block;
-import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
@@ -43,19 +42,15 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
+import org.ladysnake.creeperspores.common.CreeperlingFertilizationPayload;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -65,9 +60,9 @@ public class CreeperSpores implements ModInitializer {
     /** Identifiers corresponding to entity types that should be {@linkplain #registerCreeperLike(Identifier, EntityType)
         registered as creeper likes} if and when the entity type gets registered to {@link Registries#ENTITY_TYPE}.*/
     public static final Set<Identifier> CREEPER_LIKES = new HashSet<>(Arrays.asList(
-            new Identifier("minecraft", "creeper"),
-            new Identifier("mobz", "creep_entity"),
-            new Identifier("mobz", "crip_entity")
+            Identifier.of("minecraft", "creeper"),
+            Identifier.of("mobz", "creep_entity"),
+            Identifier.of("mobz", "crip_entity")
     ));
 
     public static final TagKey<Block> CREEPERLING_CAMOUFLAGE = TagKey.of(RegistryKeys.BLOCK, id("creeperling_camouflage"));
@@ -90,7 +85,7 @@ public class CreeperSpores implements ModInitializer {
     );
 
     public static Identifier id(String path) {
-        return new Identifier("creeperspores", path);
+        return Identifier.of("creeperspores", path);
     }
 
     public static <T> void visitRegistry(Registry<T> registry, BiConsumer<Identifier, T> visitor) {
@@ -100,6 +95,7 @@ public class CreeperSpores implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        PayloadTypeRegistry.playS2C().register(CreeperlingFertilizationPayload.ID, CreeperlingFertilizationPayload.CODEC);
         visitRegistry(Registries.ENTITY_TYPE, (id, type) -> {
             if (CREEPER_LIKES.contains(id)) {
                 // can't actually check that the entity type is living, so just hope nothing goes wrong
@@ -154,10 +150,14 @@ public class CreeperSpores implements ModInitializer {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3)
                 .build();
 
-        EntityType<CreeperlingEntity> creeperlingType = FabricEntityTypeBuilder.create(SpawnGroup.MISC, (EntityType<CreeperlingEntity> type, World world) -> new CreeperlingEntity(Objects.requireNonNull(kind.get()), world))
-                .dimensions(EntityDimensions.changing(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f))
-                .trackRangeChunks(4) // 64 blocks tracking range
-                .trackedUpdateRate(1)
+        EntityType<CreeperlingEntity> creeperlingType = EntityType.Builder.create(
+                        (EntityType.EntityFactory<CreeperlingEntity>) (type, world) ->
+                                new CreeperlingEntity(Objects.requireNonNull(kind.get()), world),
+                        SpawnGroup.MISC
+                )
+                .dimensions(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f) // Corrected
+                .maxTrackingRange(64) // 64 blocks tracking range
+                .trackingTickInterval(1)
                 .build();
 
         // Set default attributes

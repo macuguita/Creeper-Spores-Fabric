@@ -40,7 +40,7 @@ public abstract class GameRendererMixin {
     @Inject(method = "onCameraEntitySet", at = @At("RETURN"))
     private void setCreeperlingShader(Entity entity, CallbackInfo ci) {
         if (this.shader != null && entity instanceof CreeperlingEntity) {
-            this.loadShader(new Identifier("shaders/post/creeper.json"));
+            this.loadShader(Identifier.of("shaders/post/creeper.json"));
         }
     }
 }

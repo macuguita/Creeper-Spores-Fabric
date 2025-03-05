@@ -44,8 +44,9 @@ public class CreeperSporeEffect extends StatusEffect {
     }
 
     @Override
-    public void applyUpdateEffect(LivingEntity affected, int amplifier) {
+    public boolean applyUpdateEffect(LivingEntity affected, int amplifier) {
         this.creeperEntry.get().spawnCreeperling(affected);
+        return true;
     }
 
     @Override

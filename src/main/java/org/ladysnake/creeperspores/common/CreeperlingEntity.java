@@ -17,20 +17,10 @@
  */
 package org.ladysnake.creeperspores.common;
 
-import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.render.entity.feature.SkinOverlayOwner;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.goal.FleeEntityGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.*;
+import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -46,8 +36,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.registry.tag.BlockTags;
@@ -63,13 +51,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.thread.ThreadExecutor;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.LightType;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.ServerWorldAccess;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.*;
 import org.ladysnake.creeperspores.CreeperEntry;
 import org.ladysnake.creeperspores.CreeperSpores;
 import org.ladysnake.creeperspores.mixin.EntityAccessor;
@@ -148,7 +130,7 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
                 if (!held.isDamageable()) {
                     held.decrement(1);
                 } else {
-                    held.damage(1, player, p -> p.sendToolBreakStatus(hand));
+                    held.damage(1, player, LivingEntity.getSlotForHand(hand));
                 }
             }
 
@@ -163,11 +145,11 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
 
     public static boolean interactSpawnEgg(PlayerEntity player, Entity interacted, ItemStack stack, CreeperEntry kind) {
         Item item = stack.getItem();
-        if (item instanceof SpawnEggItem && ((SpawnEggItem)item).getEntityType(stack.getNbt()) == EntityType.CREEPER) {
+        if (item instanceof SpawnEggItem && ((SpawnEggItem) item).getEntityType(stack) == EntityType.CREEPER) {
             if (!interacted.getWorld().isClient) {
                 CreeperlingEntity creeperling = kind.spawnCreeperling(interacted);
                 if (creeperling != null) {
-                    if (stack.hasCustomName()) {
+                    if (stack.get(DataComponentTypes.CUSTOM_NAME) != null) {
                         creeperling.setCustomName(stack.getName());
                     }
 
@@ -190,29 +172,33 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
             }
 
             boneMeal.decrement(1);
-            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-            buf.writeInt(this.getId());
-            CustomPayloadS2CPacket packet = new CustomPayloadS2CPacket(CreeperSpores.id("creeperspores_fertilization"), buf);
+            var id = this.getId();
 
             if (this.getWorld() instanceof ServerWorld serverWorld) {
                 for (ServerPlayerEntity player : serverWorld.getPlayers()) {
-                    ServerPlayNetworking.send(player, CreeperSpores.id("creeperspores_fertilization"), buf);
+                    ServerPlayNetworking.send(player, new CreeperlingFertilizationPayload(id));
                 }
             }
         }
     }
 
-    public static void createParticles(ThreadExecutor<?> ctx, PlayerEntity player, PacketByteBuf buf) {
-        int entityId = buf.readInt();
+    public static void createParticles(ThreadExecutor<?> ctx, PlayerEntity player, CreeperlingFertilizationPayload payload) {
+        int entityId = payload.id();
         ctx.execute(() -> {
             Entity e = player.getWorld().getEntityById(entityId);
             if (e instanceof CreeperlingEntity) {
-                for(int i = 0; i < 15; ++i) {
+                for (int i = 0; i < 15; ++i) {
                     Random random = e.getWorld().random;
                     double speedX = random.nextGaussian() * 0.02D;
                     double speedY = random.nextGaussian() * 0.02D;
                     double speedZ = random.nextGaussian() * 0.02D;
-                    e.getWorld().addParticle(ParticleTypes.HAPPY_VILLAGER, e.getX() - 0.5 + random.nextFloat(), e.getY() + random.nextFloat(), e.getZ() - 0.5 + random.nextFloat(), speedX, speedY, speedZ);
+                    e.getWorld().addParticle(
+                            ParticleTypes.HAPPY_VILLAGER,
+                            e.getX() - 0.5 + random.nextFloat(),
+                            e.getY() + random.nextFloat(),
+                            e.getZ() - 0.5 + random.nextFloat(),
+                            speedX, speedY, speedZ
+                    );
                 }
             }
         });
@@ -234,8 +220,8 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
 
     @Nullable
     @Override
-    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData data, @Nullable NbtCompound tag) {
-        EntityData ret = super.initialize(world, difficulty, spawnReason, data, tag);
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @org.jetbrains.annotations.Nullable EntityData entityData) {
+        EntityData ret = super.initialize(world, difficulty, spawnReason, entityData);
         float localDifficulty = difficulty.getClampedLocalDifficulty();
         this.ticksInSunlight = (int) (MATURATION_TIME * this.random.nextFloat() * 0.9 * localDifficulty);
         return ret;
@@ -281,9 +267,9 @@ public class CreeperlingEntity extends PathAwareEntity implements SkinOverlayOwn
     }
 
     @Override
-    protected void initDataTracker() {
-        super.initDataTracker();
-        this.dataTracker.startTracking(CHARGED, false);
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(CHARGED, false);
     }
 
     @Override

@@ -31,7 +31,7 @@ import org.ladysnake.creeperspores.mixin.client.EntityRendererAccessor;
 import javax.annotation.Nullable;
 
 public class CreeperlingEntityRenderer extends MobEntityRenderer<CreeperlingEntity, CreeperEntityModel<CreeperlingEntity>> {
-    public static final Identifier DEFAULT_SKIN = new Identifier("textures/entity/creeper/creeper.png");
+    public static final Identifier DEFAULT_SKIN = Identifier.of("textures/entity/creeper/creeper.png");
 
     private final Identifier texture;
 

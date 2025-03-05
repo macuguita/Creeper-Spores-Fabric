@@ -53,7 +53,8 @@ public abstract class AbstractInventoryScreenMixin {
     @ModifyVariable(method = "getStatusEffectDescription", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/text/Text;copy()Lnet/minecraft/text/MutableText;"), index = 2)
     private MutableText creeperspores$updateRenderedEffectName(MutableText drawnString) {
         if (renderedEffects != null) {
-            StatusEffect renderedEffect = renderedEffects.get(renderedEffectsIndex++).getEffectType();
+            // Extract the StatusEffect from the RegistryEntry
+            StatusEffect renderedEffect = renderedEffects.get(renderedEffectsIndex++).getEffectType().value();
             if (renderedEffect instanceof CreeperSporeEffect sporeEffect) {
                 return sporeEffect.getLocalizedName().copyContentOnly();
             }

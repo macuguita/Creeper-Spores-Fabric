@@ -34,7 +34,11 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public abstract class WorldMixin {
     @Shadow public abstract GameRules getGameRules();
 
-    @ModifyVariable(method = "createExplosion(Lnet/minecraft/entity/Entity;Lnet/minecraft/entity/damage/DamageSource;Lnet/minecraft/world/explosion/ExplosionBehavior;DDDFZLnet/minecraft/world/World$ExplosionSourceType;Z)Lnet/minecraft/world/explosion/Explosion;", ordinal = 0, at = @At(value = "STORE", ordinal = 0))
+    @ModifyVariable(
+            method = "createExplosion(Lnet/minecraft/entity/Entity;Lnet/minecraft/entity/damage/DamageSource;Lnet/minecraft/world/explosion/ExplosionBehavior;DDDFZLnet/minecraft/world/World$ExplosionSourceType;ZLnet/minecraft/particle/ParticleEffect;Lnet/minecraft/particle/ParticleEffect;Lnet/minecraft/registry/entry/RegistryEntry;)Lnet/minecraft/world/explosion/Explosion;",
+            ordinal = 0,
+            at = @At(value = "STORE", ordinal = 0)
+    )
     private Explosion.DestructionType griefLessExplosion(Explosion.DestructionType explosionType, @Nullable Entity entity) {
         if (entity instanceof CreeperEntity creeper) {
             CreeperGrief grief = this.getGameRules().get(CreeperSpores.CREEPER_GRIEF).get();

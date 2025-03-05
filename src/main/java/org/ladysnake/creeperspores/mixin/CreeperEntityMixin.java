@@ -21,12 +21,15 @@ import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -62,7 +65,10 @@ public abstract class CreeperEntityMixin extends HostileEntity implements SporeS
             double exposure = Explosion.getExposure(center, victim);
             CreeperEntry creeperEntry = CreeperEntry.get(this.getType());
             if (creeperEntry != null) {
-                victim.addStatusEffect(new StatusEffectInstance(creeperEntry.sporeEffect(), (int) Math.round(CreeperSpores.MAX_SPORE_TIME * exposure)));
+                RegistryEntry<StatusEffect> sporeEffectEntry = Registries.STATUS_EFFECT.getEntry(creeperEntry.sporeEffect());
+                if (sporeEffectEntry != null) {
+                    victim.addStatusEffect(new StatusEffectInstance(sporeEffectEntry, (int) Math.round(CreeperSpores.MAX_SPORE_TIME * exposure)));
+                }
             }
         }
     }
