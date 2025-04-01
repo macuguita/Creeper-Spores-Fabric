@@ -22,7 +22,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import org.ladysnake.creeperspores.CreeperEntry;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
-import org.ladysnake.creeperspores.common.CreeperlingFertilizationPayload;
+import org.ladysnake.creeperspores.client.payload.CreeperlingFertilizationPayload;
 
 public class CreeperSporesClient implements ClientModInitializer {
     @Override

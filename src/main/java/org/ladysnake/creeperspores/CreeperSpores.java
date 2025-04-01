@@ -48,7 +48,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
-import org.ladysnake.creeperspores.common.CreeperlingFertilizationPayload;
+import org.ladysnake.creeperspores.client.payload.CreeperlingFertilizationPayload;
 
 import java.util.*;
 import java.util.function.BiConsumer;

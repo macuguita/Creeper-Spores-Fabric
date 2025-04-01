@@ -54,6 +54,7 @@ import net.minecraft.util.thread.ThreadExecutor;
 import net.minecraft.world.*;
 import org.ladysnake.creeperspores.CreeperEntry;
 import org.ladysnake.creeperspores.CreeperSpores;
+import org.ladysnake.creeperspores.client.payload.CreeperlingFertilizationPayload;
 import org.ladysnake.creeperspores.mixin.EntityAccessor;
 
 import javax.annotation.Nullable;
