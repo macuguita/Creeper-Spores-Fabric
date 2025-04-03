@@ -38,46 +38,15 @@ import javax.annotation.Nullable;
 public abstract class WorldMixin {
     @Shadow public abstract GameRules getGameRules();
 
-    @Inject(
-            method = "createExplosion(Lnet/minecraft/entity/Entity;Lnet/minecraft/entity/damage/DamageSource;Lnet/minecraft/world/explosion/ExplosionBehavior;DDDFZLnet/minecraft/world/World$ExplosionSourceType;Z)Lnet/minecraft/world/explosion/Explosion;",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/World;getDestructionType(Lnet/minecraft/world/GameRules$Key;)Lnet/minecraft/world/explosion/Explosion$DestructionType;"
-            ),
-            cancellable = true
-    )
-    private void griefLessExplosion(
-            @Nullable Entity entity,
-            @Nullable DamageSource damageSource,
-            @Nullable ExplosionBehavior behavior,
-            double x,
-            double y,
-            double z,
-            float power,
-            boolean createFire,
-            World.ExplosionSourceType explosionSourceType,
-            boolean particles,
-            CallbackInfoReturnable<Explosion> cir
-    ) {
+    @Inject(method = "createExplosion(Lnet/minecraft/entity/Entity;Lnet/minecraft/entity/damage/DamageSource;Lnet/minecraft/world/explosion/ExplosionBehavior;DDDFZLnet/minecraft/world/World$ExplosionSourceType;Z)Lnet/minecraft/world/explosion/Explosion;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;getDestructionType(Lnet/minecraft/world/GameRules$Key;)Lnet/minecraft/world/explosion/Explosion$DestructionType;"), cancellable = true)
+    private void griefLessExplosion(@Nullable Entity entity, @Nullable DamageSource damageSource, @Nullable ExplosionBehavior behavior, double x, double y, double z, float power, boolean createFire, World.ExplosionSourceType explosionSourceType, boolean particles, CallbackInfoReturnable<Explosion> cir) {
         if (entity instanceof CreeperEntity creeper) {
             CreeperGrief grief = this.getGameRules().get(CreeperSpores.CREEPER_GRIEF).get();
             if (!grief.shouldGrief(creeper.shouldRenderOverlay())) {
-                // Override the destruction type to KEEP if creeper grief is disabled
-                Explosion explosion = new Explosion(
-                        (World) (Object) this,
-                        entity,
-                        damageSource,
-                        behavior,
-                        x,
-                        y,
-                        z,
-                        power,
-                        createFire,
-                        Explosion.DestructionType.KEEP
-                );
+                Explosion explosion = new Explosion((World) (Object) this, entity, damageSource, behavior, x, y, z, power, createFire, Explosion.DestructionType.KEEP);
                 explosion.collectBlocksAndDamageEntities();
                 explosion.affectWorld(particles);
-                cir.setReturnValue(explosion); // Return the modified explosion
+                cir.setReturnValue(explosion);
             }
         }
     }
