@@ -11,11 +11,7 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	maven { url "https://maven.terraformersmc.com/releases/" }
 }
 
 fabricApi {
@@ -29,6 +25,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modApi "com.terraformersmc:modmenu:11.0.3"
 
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 	compileOnly "org.jetbrains:annotations:19.0.0"
