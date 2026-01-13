@@ -17,16 +17,18 @@
  */
 package org.ladysnake.creeperspores.mixin;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.mob.CreeperEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.world.World;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.ladysnake.creeperspores.CreeperEntry;
 import org.ladysnake.creeperspores.CreeperSpores;
@@ -41,23 +43,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LivingEntityMixin extends Entity {
     @Shadow public abstract float getHealth();
 
-    @Shadow public abstract @Nullable StatusEffectInstance getStatusEffect(RegistryEntry<StatusEffect> effect);
+    @Shadow public abstract @Nullable MobEffectInstance getEffect(Holder<MobEffect> effect);
 
-    public LivingEntityMixin(EntityType<?> type, World world) {
+    public LivingEntityMixin(EntityType<?> type, Level world) {
         super(type, world);
     }
 
-    @Inject(method = "damage", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isDead()Z", ordinal = 1))
-    private void spawnCreeperling(DamageSource cause, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isDeadOrDying()Z", ordinal = 1))
+    private void spawnCreeperling(ServerLevel serverLevel, DamageSource damageSource, float f, CallbackInfoReturnable<Boolean> cir) {
         for (CreeperEntry creeperEntry : CreeperEntry.all()) {
-            RegistryEntry<StatusEffect> sporeEffectEntry = Registries.STATUS_EFFECT.getEntry(creeperEntry.sporeEffect());
-            StatusEffectInstance spores = this.getStatusEffect(sporeEffectEntry);
+            Holder<MobEffect> sporeEffectEntry = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(creeperEntry.sporeEffect());
+            MobEffectInstance spores = this.getEffect(sporeEffectEntry);
             if (spores != null) {
                 float chance = 0.2f * (spores.getAmplifier() + 1);
                 if (this.getHealth() <= 0.0f) {
                     chance *= 4;
                 }
-                if (cause.isIn(CreeperSpores.SPAWNS_MORE_CREEPERLINGS)) {
+                if (damageSource.is(CreeperSpores.SPAWNS_MORE_CREEPERLINGS)) {
                     chance *= 2;
                 }
                 if (random.nextFloat() < chance) {
@@ -67,10 +69,10 @@ public abstract class LivingEntityMixin extends Entity {
         }
     }
 
-    @ModifyVariable(method = "damage", at = @At("HEAD"), ordinal = 0, argsOnly = true)
-    private float dealDoubleFireDamage(float damageAmount, DamageSource damage) {
+    @ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private float dealDoubleFireDamage(float damageAmount, ServerLevel serverLevel, DamageSource damage) {
         //noinspection ConstantConditions
-        if ((Entity) this instanceof CreeperEntity && damage.isIn(CreeperSpores.EXTRA_CREEPER_DAMAGE)) {
+        if ((Entity) this instanceof Creeper && damage.is(CreeperSpores.EXTRA_CREEPER_DAMAGE)) {
             return damageAmount * 2;
         }
         return damageAmount;

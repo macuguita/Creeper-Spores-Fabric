@@ -18,44 +18,45 @@
 package org.ladysnake.creeperspores.common;
 
 import com.google.common.base.Suppliers;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.text.Text;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.network.chat.Component;
 import org.ladysnake.creeperspores.CreeperEntry;
 
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class CreeperSporeEffect extends StatusEffect {
+public class CreeperSporeEffect extends MobEffect {
     private final EntityType<?> creeperType;
     private final Supplier<CreeperEntry> creeperEntry;
 
-    public CreeperSporeEffect(StatusEffectCategory type, int color, EntityType<?> creeperType) {
+    public CreeperSporeEffect(MobEffectCategory type, int color, EntityType<?> creeperType) {
         super(type, color);
         this.creeperType = creeperType;
         this.creeperEntry = Suppliers.memoize(() -> Objects.requireNonNull(CreeperEntry.get(this.creeperType)));
     }
 
     @Override
-    public boolean canApplyUpdateEffect(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration == 1 && Math.random() < 0.6;
     }
 
     @Override
-    public boolean applyUpdateEffect(LivingEntity affected, int amplifier) {
-        this.creeperEntry.get().spawnCreeperling(affected);
+    public boolean applyEffectTick(ServerLevel serverLevel, LivingEntity livingEntity, int i) {
+        this.creeperEntry.get().spawnCreeperling(livingEntity);
         return true;
     }
 
     @Override
-    public String loadTranslationKey() {
+    public String getOrCreateDescriptionId() {
         return "effect.creeperspores.creeper_spore";
     }
 
-    public Text getLocalizedName() {
-        return Text.translatable("effect.creeperspores.generic_spore", this.creeperType.getName());
+    public Component getLocalizedName() {
+        return Component.translatable("effect.creeperspores.generic_spore", this.creeperType.getDescription());
     }
 
 }

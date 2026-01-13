@@ -17,13 +17,12 @@
  */
 package org.ladysnake.creeperspores;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,10 +54,10 @@ public record CreeperEntry(EntityType<? extends LivingEntity> creeperType,
      * Spawns a creeperling at an affected entity
      */
     public CreeperlingEntity spawnCreeperling(Entity affected) {
-        if (!affected.getWorld().isClient) {
-            CreeperlingEntity spawn = Objects.requireNonNull(this.creeperlingType.create(affected.getWorld()));
-            spawn.refreshPositionAndAngles(affected.getX(), affected.getY(), affected.getZ(), 0, 0);
-            affected.getWorld().spawnEntity(spawn);
+        if (!affected.level().isClientSide()) {
+            CreeperlingEntity spawn = Objects.requireNonNull(this.creeperlingType.create(affected.level(), EntitySpawnReason.TRIGGERED));
+            spawn.move(MoverType.SELF, new Vec3(affected.getX(), affected.getY(), affected.getZ()));
+            affected.level().addFreshEntity(spawn);
             return spawn;
         }
         return null;
@@ -68,8 +67,8 @@ public record CreeperEntry(EntityType<? extends LivingEntity> creeperType,
      * Create a creeperling for an entity, without spawning it
      */
     public CreeperlingEntity createCreeperling(LivingEntity entity) {
-        CreeperlingEntity creeperlingEntity = Objects.requireNonNull(creeperlingType.create(entity.getWorld()));
-        creeperlingEntity.copyPositionAndRotation(entity);
+        CreeperlingEntity creeperlingEntity = Objects.requireNonNull(creeperlingType.create(entity.level(), EntitySpawnReason.TRIGGERED));
+        creeperlingEntity.copyPosition(entity);
         return creeperlingEntity;
     }
 }

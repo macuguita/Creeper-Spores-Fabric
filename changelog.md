@@ -1,4 +1,11 @@
 ------------------------------------------------------
+Version 1.14.0
+------------------------------------------------------
+- Migrated gamerules to the new system, some changes had to be made to the names:
+  - "creeper-spores:creeperGrief" -> "creeper-spores:creeper-grief"
+  - "creeper-spores:creeperReplaceChance" -> "creeper-spores:creeper-replace-chance"
+
+------------------------------------------------------
 Version 1.13.1
 ------------------------------------------------------
 - Fixed crash when bonemealing a creeperling (thanks dariensg !)

@@ -1,28 +1,28 @@
 {
   "required": true,
   "package": "org.ladysnake.creeperspores.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_21",
+  "mixinextras": {
+    "minVersion": "0.5.0"
+  },
   "mixins": [
     "BoneMealItemMixin",
     "CatEntitiesMixin",
-    "CreeperEntityMixin",
+    "CreeperMixin",
     "EntityAccessor",
     "EntityTypeAccessor",
-    "ExplosionMixin",
-    "GameRuleKeyAccessor",
-    "GameRulesMixin",
+    "ServerExplosionMixin",
     "LivingEntityMixin",
-    "SpawnHelperMixin",
-    "WorldMixin"
+    "NaturalSpawnerMixin",
+    "ServerLevelMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-    "client.AbstractInventoryScreenMixin",
-    "client.EntityRendererAccessor",
+    "client.EffectRenderingInventoryScreenMixin",
     "client.EntityRendererRegistryMixin",
     "client.GameRendererMixin",
-    "client.StatusEffectSpriteManagerMixin"
+    "client.GuiMixin"
   ]
 }

@@ -17,24 +17,25 @@
  */
 package org.ladysnake.creeperspores.client.payload;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type;
 import org.ladysnake.creeperspores.CreeperSpores;
 
-public record CreeperlingFertilizationPayload(int id) implements CustomPayload {
+public record CreeperlingFertilizationPayload(int id) implements CustomPacketPayload {
 
-    public static final CustomPayload.Id<CreeperlingFertilizationPayload> ID = new CustomPayload.Id<>(CreeperSpores.CREEPERLING_FERTILIZATION_PACKET);
+    public static final CustomPacketPayload.Type<CreeperlingFertilizationPayload> ID = new CustomPacketPayload.Type<>(CreeperSpores.CREEPERLING_FERTILIZATION_PACKET);
 
-    public static final PacketCodec<RegistryByteBuf, CreeperlingFertilizationPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.INTEGER,
+    public static final StreamCodec<RegistryFriendlyByteBuf, CreeperlingFertilizationPayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.INT,
             CreeperlingFertilizationPayload::id,
             CreeperlingFertilizationPayload::new
     );
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

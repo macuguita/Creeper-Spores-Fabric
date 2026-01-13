@@ -20,35 +20,35 @@ package org.ladysnake.creeperspores;
 import com.google.common.base.Suppliers;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.registry.RegistryEntryAddedCallback;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
-import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
-import net.fabricmc.fabric.api.gamerule.v1.rule.DoubleRule;
-import net.fabricmc.fabric.api.gamerule.v1.rule.EnumRule;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleBuilder;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
-import net.minecraft.block.Block;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageType;
-import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.GameRules;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityType;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.gamerules.GameRule;
+import net.minecraft.world.level.gamerules.GameRuleCategory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
+import org.ladysnake.creeperspores.client.payload.CreeperlingFertilizationPayload;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
-import org.ladysnake.creeperspores.client.payload.CreeperlingFertilizationPayload;
+import org.w3c.dom.Attr;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -57,46 +57,52 @@ import java.util.function.Supplier;
 public class CreeperSpores implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("creeper-spores");
 
-    /** Identifiers corresponding to entity types that should be {@linkplain #registerCreeperLike(Identifier, EntityType)
-        registered as creeper likes} if and when the entity type gets registered to {@link Registries#ENTITY_TYPE}.*/
+    /**
+     * Identifiers corresponding to entity types that should be {@linkplain #registerCreeperLike(Identifier, EntityType)
+     * registered as creeper likes} if and when the entity type gets registered to {@link BuiltInRegistries#ENTITY_TYPE}.
+     */
     public static final Set<Identifier> CREEPER_LIKES = new HashSet<>(Arrays.asList(
-            Identifier.of("minecraft", "creeper"),
-            Identifier.of("mobz", "creep_entity"),
-            Identifier.of("mobz", "crip_entity")
+            Identifier.fromNamespaceAndPath("minecraft", "creeper"),
+            Identifier.fromNamespaceAndPath("mobz", "creep_entity"),
+            Identifier.fromNamespaceAndPath("mobz", "crip_entity")
     ));
 
-    public static final TagKey<Block> CREEPERLING_CAMOUFLAGE = TagKey.of(RegistryKeys.BLOCK, id("creeperling_camouflage"));
-    public static final TagKey<Item> FERTILIZERS = TagKey.of(RegistryKeys.ITEM, id("fertilizers"));
-    public static final TagKey<Item> SUPER_FERTILIZERS = TagKey.of(RegistryKeys.ITEM, id("super_fertilizers"));
-    public static final TagKey<DamageType> SPAWNS_MORE_CREEPERLINGS = TagKey.of(RegistryKeys.DAMAGE_TYPE, id("spawns_more_creeperlings"));
-    public static final TagKey<DamageType> EXTRA_CREEPER_DAMAGE = TagKey.of(RegistryKeys.DAMAGE_TYPE, id("extra_creeper_damage"));
+    public static final TagKey<Block> CREEPERLING_CAMOUFLAGE = TagKey.create(Registries.BLOCK, id("creeperling_camouflage"));
+    public static final TagKey<Item> FERTILIZERS = TagKey.create(Registries.ITEM, id("fertilizers"));
+    public static final TagKey<Item> SUPER_FERTILIZERS = TagKey.create(Registries.ITEM, id("super_fertilizers"));
+    public static final TagKey<DamageType> SPAWNS_MORE_CREEPERLINGS = TagKey.create(Registries.DAMAGE_TYPE, id("spawns_more_creeperlings"));
+    public static final TagKey<DamageType> EXTRA_CREEPER_DAMAGE = TagKey.create(Registries.DAMAGE_TYPE, id("extra_creeper_damage"));
 
     public static final Identifier CREEPERLING_FERTILIZATION_PACKET = id("creeperling-fertilization");
     public static final String GIVE_SPORES_TAG = "cspores:giveSpores";
     public static final int MAX_SPORE_TIME = 20 * 180;
 
-    public static final GameRules.Key<EnumRule<CreeperGrief>> CREEPER_GRIEF = registerGamerule(
-            "creeper-spores:creeperGrief",
-            GameRuleFactory.createEnumRule(CreeperGrief.CHARGED)
-    );
-    public static final GameRules.Key<DoubleRule> CREEPER_REPLACE_CHANCE = registerGamerule(
-            "creeper-spores:creeperReplaceChance",
-            GameRuleFactory.createDoubleRule(0.2, 0, 1)
-    );
+    public static final GameRule<CreeperGrief> CREEPER_GRIEF = GameRuleBuilder.forEnum(CreeperGrief.CHARGED)
+            .category(GameRuleCategory.MOBS)
+            .buildAndRegister(id("creeper-grief"));
+
+    public static final GameRule<Double> CREEPER_REPLACE_CHANCE = GameRuleBuilder.forDouble(0.2)
+            .range(0.0d, 1.0d)
+            .category(GameRuleCategory.MOBS)
+            .buildAndRegister(id("creeper-replace-chance"));
 
     public static Identifier id(String path) {
-        return Identifier.of("creeperspores", path);
+        return Identifier.fromNamespaceAndPath("creeperspores", path);
     }
 
     public static <T> void visitRegistry(Registry<T> registry, BiConsumer<Identifier, T> visitor) {
         RegistryEntryAddedCallback.event(registry).register((index, identifier, entry) -> visitor.accept(identifier, entry));
-        new HashSet<>(registry.getIds()).forEach(id -> visitor.accept(id, registry.get(id)));
+        new HashSet<>(registry.keySet()).forEach(id -> {
+            Optional<Holder.Reference<T>> regId = registry.get(id);
+            if (regId.isEmpty()) return;
+            visitor.accept(id, regId.get().value());
+        });
     }
 
     @Override
     public void onInitialize() {
         PayloadTypeRegistry.playS2C().register(CreeperlingFertilizationPayload.ID, CreeperlingFertilizationPayload.CODEC);
-        visitRegistry(Registries.ENTITY_TYPE, (id, type) -> {
+        visitRegistry(BuiltInRegistries.ENTITY_TYPE, (id, type) -> {
             if (CREEPER_LIKES.contains(id)) {
                 // can't actually check that the entity type is living, so just hope nothing goes wrong
                 @SuppressWarnings("unchecked") EntityType<? extends LivingEntity> livingType = (EntityType<? extends LivingEntity>) type;
@@ -105,15 +111,11 @@ public class CreeperSpores implements ModInitializer {
         });
     }
 
-    private static <T extends GameRules.Rule<T>> GameRules.Key<T> registerGamerule(String name, GameRules.Type<T> type) {
-        return GameRuleRegistry.register(name, GameRules.Category.MOBS, type);
-    }
-
     @ApiStatus.Internal
     public static void registerCreeperLike(Identifier id) {
         // can't actually check that the entity type is living, so just hope nothing goes wrong
         // the cast to Optional<?> is not optional, according to javac
-        @SuppressWarnings({"unchecked", "RedundantCast"}) Optional<EntityType<? extends LivingEntity>> creeperType = (Optional<EntityType<? extends LivingEntity>>) (Optional<?>) Registries.ENTITY_TYPE.getOrEmpty(id);
+        @SuppressWarnings("unchecked") Optional<EntityType<? extends LivingEntity>> creeperType = (Optional<EntityType<? extends LivingEntity>>) (Optional<?>) BuiltInRegistries.ENTITY_TYPE.getOptional(id);
         if (creeperType.isPresent()) {
             registerCreeperLike(id, creeperType.get());
         } else {
@@ -125,12 +127,12 @@ public class CreeperSpores implements ModInitializer {
     public static void registerCreeperLike(Identifier id, EntityType<? extends LivingEntity> type) {
         String prefix = id.getNamespace().equals("minecraft") ? "" : (id.toString().replace(':', '_') + "_");
         EntityType<CreeperlingEntity> creeperlingType = Registry.register(
-                Registries.ENTITY_TYPE,
+                BuiltInRegistries.ENTITY_TYPE,
                 CreeperSpores.id(prefix + "creeperling"),
-                createCreeperlingType(type)
+                createCreeperlingType(type, prefix)
         );
         CreeperSporeEffect sporesEffect = Registry.register(
-                Registries.STATUS_EFFECT,
+                BuiltInRegistries.MOB_EFFECT,
                 CreeperSpores.id(prefix + "creeper_spore"),
                 createCreeperSporesEffect(type)
         );
@@ -139,31 +141,30 @@ public class CreeperSpores implements ModInitializer {
 
     @Contract(pure = true)
     private static CreeperSporeEffect createCreeperSporesEffect(EntityType<?> creeperType) {
-        return new CreeperSporeEffect(StatusEffectCategory.NEUTRAL, 0x22AA00, creeperType);
+        return new CreeperSporeEffect(MobEffectCategory.NEUTRAL, 0x22AA00, creeperType);
     }
 
     @Contract(pure = true)
-    private static EntityType<CreeperlingEntity> createCreeperlingType(EntityType<? extends LivingEntity> creeperType) {
+    private static EntityType<CreeperlingEntity> createCreeperlingType(EntityType<? extends LivingEntity> creeperType, String prefix) {
         Supplier<CreeperEntry> kind = Suppliers.memoize(() -> CreeperEntry.get(creeperType));
-        DefaultAttributeContainer defaultAttributes = LivingEntity.createLivingAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3)
-                .build();
 
-        EntityType<CreeperlingEntity> creeperlingType = EntityType.Builder.create(
+        ResourceKey<EntityType<?>> resKey = ResourceKey.create(Registries.ENTITY_TYPE, id(prefix + "creeperling"));
+        EntityType<CreeperlingEntity> creeperlingType = FabricEntityType.Builder.createLiving(
                         (EntityType.EntityFactory<CreeperlingEntity>) (type, world) ->
                                 new CreeperlingEntity(Objects.requireNonNull(kind.get()), world),
-                        SpawnGroup.MISC
+                        MobCategory.MISC,
+                        creeperlingEntityLiving -> creeperlingEntityLiving
+                                .defaultAttributes(() ->
+                                        Mob.createMobAttributes()
+                                                .add(Attributes.MAX_HEALTH, 10.0)
+                                                .add(Attributes.MOVEMENT_SPEED, 0.24)
+                                                .add(Attributes.TEMPT_RANGE, 16.0)
+                                )
                 )
-                .dimensions(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f) // Corrected
-                .maxTrackingRange(64) // 64 blocks tracking range
-                .trackingTickInterval(1)
-                .build();
-
-        // Set default attributes
-        FabricDefaultAttributeRegistry.register(creeperlingType, MobEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, defaultAttributes.getValue(EntityAttributes.GENERIC_MAX_HEALTH) * 0.5)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, defaultAttributes.getValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) * 0.8));
+                .sized(creeperType.getWidth() / 2f, creeperType.getHeight() / 2f) // Corrected
+                .clientTrackingRange(64) // 64 blocks tracking range
+                .updateInterval(1)
+                .build(resKey);
 
         return creeperlingType;
     }

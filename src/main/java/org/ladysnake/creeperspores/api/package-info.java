@@ -15,7 +15,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; If not, see <https://www.gnu.org/licenses>.
  */
-@ParametersAreNonnullByDefault
+// TODO(Ravel): file contains classes with different new packages
+//
+// TODO(Ravel): file contains classes with different new packages
+//
+@NullMarked
 package org.ladysnake.creeperspores.api;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.jspecify.annotations.NullMarked;

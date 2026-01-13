@@ -17,10 +17,10 @@
  */
 package org.ladysnake.creeperspores.mixin.client;
 
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.ladysnake.creeperspores.common.CreeperlingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,15 +32,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
     @Unique
-    @Nullable PostEffectProcessor shader;
+    @Nullable PostChain shader;
 
     @Unique
     abstract void loadShader(Identifier id);
 
-    @Inject(method = "onCameraEntitySet", at = @At("RETURN"))
+    @Inject(method = "checkEntityPostEffect", at = @At("RETURN"))
     private void setCreeperlingShader(Entity entity, CallbackInfo ci) {
         if (this.shader != null && entity instanceof CreeperlingEntity) {
-            this.loadShader(Identifier.of("shaders/post/creeper.json"));
+            this.loadShader(Identifier.parse("shaders/post/creeper.json"));
         }
     }
 }

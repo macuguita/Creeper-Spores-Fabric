@@ -17,30 +17,35 @@
  */
 package org.ladysnake.creeperspores.mixin.client;
 
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.registry.entry.RegistryEntry;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.effect.MobEffect;
 import org.ladysnake.creeperspores.CreeperEntry;
+import org.ladysnake.creeperspores.CreeperSpores;
 import org.ladysnake.creeperspores.common.CreeperSporeEffect;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(StatusEffectSpriteManager.class)
-public abstract class StatusEffectSpriteManagerMixin {
-    @Unique
-    private static final StatusEffect BASE_CREEPER_SPORES = CreeperEntry.getVanilla().sporeEffect();
+@Mixin(Gui.class)
+public abstract class GuiMixin {
 
     @Unique
-    public abstract Sprite getSprite(StatusEffect statusEffect_1);
+    private static final MobEffect BASE_CREEPER_SPORES = CreeperEntry.getVanilla().sporeEffect();
 
-    @Inject(method = "getSprite", at = @At("HEAD"), cancellable = true)
-    private void creeperspores$getCreeperSporesSprite(RegistryEntry<StatusEffect> effect, CallbackInfoReturnable<Sprite> cir) {
-        if (effect instanceof CreeperSporeEffect && effect != BASE_CREEPER_SPORES) {
-            cir.setReturnValue(getSprite(BASE_CREEPER_SPORES));
+    @ModifyReturnValue(
+            method = "getMobEffectSprite",
+            at = @At("RETURN")
+    )
+    private static Identifier creeperspores$getCreeperSporesSprite(Identifier original, @Local(argsOnly = true) Holder<MobEffect> holder) {
+        if (holder.value() instanceof CreeperSporeEffect && holder.value() != BASE_CREEPER_SPORES) {
+            return BuiltInRegistries.MOB_EFFECT.getKey(BASE_CREEPER_SPORES)
+                    .withPrefix("mob_effect/");
         }
+        return original;
     }
 }

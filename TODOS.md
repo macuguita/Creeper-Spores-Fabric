@@ -1,0 +1,5 @@
+- clicking with spawn egg on creeper does not spawn a creeperling
+- when being hit while having creeper spores creeperlings don't spawn
+- probably the compat creeperlings with custom texture whatever don't work
+- creeperling shadow is huge for some reason
+- probably more render stuff that i don't quite master
